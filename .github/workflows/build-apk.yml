@@ -18,6 +18,9 @@ jobs:
           mkdir project
           unzip -q Doodh-Khata-Android-Project.zip -d project
 
+      - name: Apply Doodh Khata updates
+        run: python3 patches/apply_doodh_khata_updates.py
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
