@@ -2,7 +2,7 @@ name: Build Doodh Khata APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, work/doodh-khata-source-access]
   workflow_dispatch:
 
 jobs:
@@ -24,8 +24,6 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      
-
       - name: Install Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -41,3 +39,9 @@ jobs:
         with:
           name: Doodh-Khata-APK
           path: project/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload original Android source ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Doodh-Khata-Android-Source
+          path: Doodh-Khata-Android-Project.zip
