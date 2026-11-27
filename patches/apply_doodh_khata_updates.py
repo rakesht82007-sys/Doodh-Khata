@@ -178,7 +178,7 @@ print("Updated monthly PDF export to a date-wise table with a grand total.")
 main = Path("project/app/src/main/java/com/doodhkhata/app/MainActivity.java")
 java = main.read_text()
 old_menu = 'page.addView(button("Monthly bill & date-wise records",()->showBills()));'
-new_menu = old_menu + '\\n        page.addView(button("Edit all saved records",()->showAllRecords()));'
+new_menu = old_menu + '\n        page.addView(button("Edit all saved records",()->showAllRecords()));'
 if 'showAllRecords()' not in java:
     if old_menu not in java:
         raise SystemExit("Could not find the monthly records menu to add the Records screen.")
