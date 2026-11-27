@@ -172,3 +172,40 @@ if n!=1:
     raise SystemExit("Could not locate the existing exportPdf method; refusing to alter the build.")
 main.write_text(java2)
 print("Updated monthly PDF export to a date-wise table with a grand total.")
+
+
+# Add a dedicated all-records screen so every saved milk entry can be reviewed and edited.
+main = Path("project/app/src/main/java/com/doodhkhata/app/MainActivity.java")
+java = main.read_text()
+old_menu = 'page.addView(button("Monthly bill & date-wise records",()->showBills()));'
+new_menu = old_menu + '\\n        page.addView(button("Edit all saved records",()->showAllRecords()));'
+if 'showAllRecords()' not in java:
+    if old_menu not in java:
+        raise SystemExit("Could not find the monthly records menu to add the Records screen.")
+    java = java.replace(old_menu, new_menu, 1)
+    marker = '    void showCharts(){'
+    method = '''    void showAllRecords(){
+        base("All saved records");
+        page.addView(text("Edit any saved date, milk quantity or payment status. Changes are saved to your database.",14,false));
+        Cursor c=db.getReadableDatabase().rawQuery("SELECT date,reg_qty,cow_qty,payment FROM orders ORDER BY date DESC",null);
+        int count=0;
+        while(c.moveToNext()){
+            String d=c.getString(0); double r=c.getDouble(1), co=c.getDouble(2); String pay=c.getString(3);
+            double[] rt=rates(d); double amount=r*rt[0]+co*rt[1];
+            page.addView(text(d+"\\nRegular: "+r+" L   |   Cow: "+co+" L\\nBill: "+money(amount)+"   |   "+pay,15,true));
+            final String date=d; final double rq=r,cq=co; final String payment=pay;
+            page.addView(button("EDIT / SAVE THIS RECORD",()->editEntry(date,rq,cq,payment)));
+            count++;
+        }
+        c.close();
+        if(count==0)page.addView(text("No saved records yet.",15,false));
+        page.addView(button("Back to Home",()->showHome()));
+    }
+'''
+    if marker not in java:
+        raise SystemExit("Could not find the chart screen insertion point.")
+    java = java.replace(marker, method + marker, 1)
+    main.write_text(java)
+    print("Added an all-records editor with saved edits.")
+else:
+    print("All-records editor already present; no duplicate added.")
