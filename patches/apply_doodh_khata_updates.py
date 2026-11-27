@@ -67,3 +67,108 @@ if 'android:icon="@drawable/ic_launcher"' not in m:
     m = m.replace('android:label="Doodh Khata"', 'android:label="Doodh Khata" android:icon="@drawable/ic_launcher"')
 manifest.write_text(m)
 print("Added the Doodh Khata launcher icon.")
+
+
+# Replace the monthly PDF export with a properly aligned table and a final total row.
+main = Path("project/app/src/main/java/com/doodhkhata/app/MainActivity.java")
+java = main.read_text()
+pdf_method = r"""    void exportPdf(String m){
+        PdfDocument pdf=new PdfDocument();
+        Cursor cur=null;
+        try{
+            cur=db.getReadableDatabase().rawQuery("SELECT date,reg_qty,cow_qty,payment FROM orders WHERE date LIKE ? ORDER BY date",new String[]{m+"%"});
+            final int left=35, right=560, rowH=25;
+            final int[] x={35,112,178,244,310,376,465,560};
+            Paint p=new Paint(3);
+            p.setColor(Color.BLACK);
+            int pageNo=1, y=0;
+            PdfDocument.Page pg=null;
+            Canvas canvas=null;
+            double total=0;
+            int rows=0;
+            java.text.DecimalFormat qtyFmt=new java.text.DecimalFormat("0.##");
+            Runnable startPage=()->{};
+            // Page creation and table header are repeated whenever the table continues.
+            while(cur.moveToNext()){
+                if(pg==null || y>755){
+                    if(pg!=null)pdf.finishPage(pg);
+                    PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(595,842,pageNo++).create();
+                    pg=pdf.startPage(info); canvas=pg.getCanvas();
+                    p.setColor(Color.rgb(18,91,68)); p.setTextSize(19); p.setTypeface(android.graphics.Typeface.create("sans-serif",android.graphics.Typeface.BOLD));
+                    canvas.drawText("DOODH KHATA - MONTHLY MILK BILL",left,42,p);
+                    p.setColor(Color.DKGRAY); p.setTextSize(11); p.setTypeface(android.graphics.Typeface.create("sans-serif",0));
+                    canvas.drawText("Month: "+m+"     Date-wise bill statement",left,65,p);
+                    y=91;
+                    p.setColor(Color.rgb(224,239,230)); canvas.drawRect(left,y,right,y+rowH,p);
+                    p.setColor(Color.rgb(18,91,68)); p.setTextSize(9); p.setTypeface(android.graphics.Typeface.create("sans-serif",android.graphics.Typeface.BOLD));
+                    String[] heads={"Date","Reg Qty","Reg Rate","Cow Qty","Cow Rate","Amount","Payment"};
+                    for(int i=0;i<heads.length;i++)canvas.drawText(heads[i],x[i]+4,y+16,p);
+                    p.setColor(Color.GRAY); p.setStrokeWidth(0.7f); canvas.drawLine(left,y+rowH,right,y+rowH,p);
+                    y+=rowH;
+                }
+                String d=cur.getString(0);
+                double r=cur.getDouble(1), co=cur.getDouble(2);
+                double[] rt=rates(d);
+                double amt=r*rt[0]+co*rt[1];
+                total+=amt; rows++;
+                p.setTypeface(android.graphics.Typeface.create("sans-serif",0)); p.setTextSize(9); p.setColor(Color.BLACK);
+                String[] vals={d,qtyFmt.format(r),money(rt[0]),qtyFmt.format(co),money(rt[1]),money(amt),cur.getString(3)};
+                for(int i=0;i<vals.length;i++){
+                    String v=vals[i]==null?"":vals[i];
+                    float max=x[i+1]-x[i]-7;
+                    while(p.measureText(v)>max && v.length()>3)v=v.substring(0,v.length()-1);
+                    if(!v.equals(vals[i]))v=v+"…";
+                    canvas.drawText(v,x[i]+4,y+16,p);
+                }
+                p.setColor(Color.LTGRAY); p.setStrokeWidth(0.5f); canvas.drawLine(left,y+rowH,right,y+rowH,p);
+                y+=rowH;
+            }
+            cur.close(); cur=null;
+            if(pg==null){
+                PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(595,842,1).create();
+                pg=pdf.startPage(info); canvas=pg.getCanvas();
+                p.setColor(Color.rgb(18,91,68)); p.setTextSize(19); p.setTypeface(android.graphics.Typeface.create("sans-serif",android.graphics.Typeface.BOLD));
+                canvas.drawText("DOODH KHATA - MONTHLY MILK BILL",left,42,p);
+                p.setColor(Color.DKGRAY); p.setTextSize(11); p.setTypeface(android.graphics.Typeface.create("sans-serif",0));
+                canvas.drawText("Month: "+m+"     No orders recorded",left,65,p);
+                y=91;
+                p.setColor(Color.rgb(224,239,230)); canvas.drawRect(left,y,right,y+rowH,p);
+                p.setColor(Color.rgb(18,91,68)); p.setTextSize(9); p.setTypeface(android.graphics.Typeface.create("sans-serif",android.graphics.Typeface.BOLD));
+                String[] heads={"Date","Reg Qty","Reg Rate","Cow Qty","Cow Rate","Amount","Payment"};
+                for(int i=0;i<heads.length;i++)canvas.drawText(heads[i],x[i]+4,y+16,p);
+                y+=rowH;
+            }
+            // Keep the grand total together at the bottom of the final page.
+            if(y>770){
+                pdf.finishPage(pg);
+                PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(595,842,pageNo++).create();
+                pg=pdf.startPage(info); canvas=pg.getCanvas();
+                p.setColor(Color.rgb(18,91,68)); p.setTextSize(19); p.setTypeface(android.graphics.Typeface.create("sans-serif",android.graphics.Typeface.BOLD));
+                canvas.drawText("DOODH KHATA - MONTHLY MILK BILL",left,42,p);
+                p.setColor(Color.DKGRAY); p.setTextSize(11); p.setTypeface(android.graphics.Typeface.create("sans-serif",0));
+                canvas.drawText("Month: "+m+"     Continued",left,65,p);
+                y=100;
+            }
+            p.setColor(Color.rgb(224,239,230)); canvas.drawRect(left,y,right,y+30,p);
+            p.setColor(Color.rgb(18,91,68)); p.setTextSize(13); p.setTypeface(android.graphics.Typeface.create("sans-serif",android.graphics.Typeface.BOLD));
+            canvas.drawText("TOTAL BILL ("+rows+" orders)",left+8,y+20,p);
+            canvas.drawText(money(total),right-95,y+20,p);
+            p.setColor(Color.DKGRAY); p.setTextSize(9); p.setTypeface(android.graphics.Typeface.create("sans-serif",0));
+            canvas.drawText("Generated by Doodh Khata",left,815,p);
+            pdf.finishPage(pg); pg=null;
+            File f=new File(getExternalFilesDir(null),"DoodhKhata-"+m+".pdf");
+            FileOutputStream os=new FileOutputStream(f); pdf.writeTo(os); os.close(); pdf.close();
+            shareFile(f,"application/pdf");
+        }catch(Exception e){
+            if(cur!=null)cur.close();
+            try{pdf.close();}catch(Exception ignored){}
+            msg("PDF export failed: "+e.getMessage());
+        }
+    }
+"""
+pattern=r"    void exportPdf\(String m\)\{.*?\n    \}\n    void shareFile"
+java2,n=re.subn(pattern,lambda _:pdf_method+"\n    void shareFile",java,count=1,flags=re.S)
+if n!=1:
+    raise SystemExit("Could not locate the existing exportPdf method; refusing to alter the build.")
+main.write_text(java2)
+print("Updated monthly PDF export to a date-wise table with a grand total.")
