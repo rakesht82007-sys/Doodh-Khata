@@ -37,3 +37,33 @@ if old in s:s=s.replace(old,new,1)
 elif 'final String[] editedDate={d};' not in s:raise SystemExit('Edit dialog block not found')
 p.write_text(s)
 print("Applied modern layout and manual delivery-date selection/editing.")
+
+
+# Create a modern Doodh Khata launcher icon (milk bottle + fresh green branding).
+res = Path("project/app/src/main/res")
+drawable = res / "drawable"
+drawable.mkdir(parents=True, exist_ok=True)
+icon = """<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#0F6B4F"
+        android:pathData="M18,0 L90,0 Q108,0 108,18 L108,90 Q108,108 90,108 L18,108 Q0,108 0,90 L0,18 Q0,0 18,0 Z"/>
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M43,19 L65,19 L65,29 L72,38 L72,82 Q72,88 66,88 L42,88 Q36,88 36,82 L36,38 L43,29 Z"/>
+    <path android:fillColor="#D8F3E6"
+        android:pathData="M43,19 L65,19 L65,28 L43,28 Z"/>
+    <path android:fillColor="#29A879"
+        android:pathData="M39,55 L69,55 L69,79 Q69,84 64,84 L44,84 Q39,84 39,79 Z"/>
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M54,59 C49,66 47,69 47,72 C47,76 50,79 54,79 C58,79 61,76 61,72 C61,69 59,66 54,59 Z"/>
+    <path android:fillColor="#B8E8D3"
+        android:pathData="M44,35 L64,35 L68,41 L40,41 Z"/>
+</vector>
+"""
+(drawable / "ic_launcher.xml").write_text(icon)
+manifest = Path("project/app/src/main/AndroidManifest.xml")
+m = manifest.read_text()
+if 'android:icon="@drawable/ic_launcher"' not in m:
+    m = m.replace('android:label="Doodh Khata"', 'android:label="Doodh Khata" android:icon="@drawable/ic_launcher"')
+manifest.write_text(m)
+print("Added the Doodh Khata launcher icon.")
