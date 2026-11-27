@@ -195,6 +195,15 @@ if 'showAllRecords()' not in java:
             page.addView(text(d+"\\nRegular: "+r+" L   |   Cow: "+co+" L\\nBill: "+money(amount)+"   |   "+pay,15,true));
             final String date=d; final double rq=r,cq=co; final String payment=pay;
             page.addView(button("EDIT / SAVE THIS RECORD",()->editEntry(date,rq,cq,payment)));
+            page.addView(button("DELETE THIS DAY'S RECORD",()->new AlertDialog.Builder(MainActivity.this)
+                .setTitle("Delete record?")
+                .setMessage("Are you sure you want to Delete this day's record?")
+                .setNegativeButton("Cancel",(dialog,which)->dialog.dismiss())
+                .setPositiveButton("Delete",(dialog,which)->{
+                    db.getWritableDatabase().delete("orders","date=?",new String[]{date});
+                    msg("Record deleted successfully.");
+                    showAllRecords();
+                }).show()));
             count++;
         }
         c.close();
